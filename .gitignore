@@ -1,0 +1,14 @@
+# Ignore everything
+*
+
+# But not directories (so rules can match inside them)
+!*/
+
+# Keep yml/yaml and json files
+!*.yml
+!*.yaml
+!*.json
+
+# Keep the .gitignore itself
+!.gitignore
+/.idea/
