@@ -1,9 +1,10 @@
 name: Release & Publish
 
 on:
-  pull_request:
-    types: [closed]
-    branches: [main]
+  push:
+    branches: main
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
 
 jobs:
   release:

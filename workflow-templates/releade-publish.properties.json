@@ -1,0 +1,6 @@
+{
+  "name": "Release & Publish to Maven Central",
+  "description": "Publishes to Maven Central when pom.xml changes on main.",
+  "iconName": "octicon package",
+  "categories": ["Java", "Maven"]
+}
