@@ -1,0 +1,6 @@
+{
+  "name": "Publish to GitHub Packages",
+  "description": "Publishes to GitHub Packages when push on develop.",
+  "iconName": "octicon package",
+  "categories": ["Java", "Maven"]
+}
