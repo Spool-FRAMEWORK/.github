@@ -80,6 +80,9 @@ jobs:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.GPG_PASSPHRASE }}
 
+      - name: Set release version
+        run: mvn versions:set -DnewVersion=${{ needs.release.outputs.version }} -DgenerateBackupPoms=false
+
       - name: Publish to Maven Central
         run: mvn --batch-mode deploy -P ${{ inputs.maven-profile }} -DskipTests
         env:

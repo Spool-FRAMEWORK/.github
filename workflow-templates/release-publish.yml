@@ -8,7 +8,7 @@ on:
 
 jobs:
   release:
-    uses: TFT-Framework/.github/.github/workflows/reusable-release.yml@main
+    uses: Spool-FRAMEWORK/.github/.github/workflows/reusable-release.yml@main
     secrets:
       GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
       GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
