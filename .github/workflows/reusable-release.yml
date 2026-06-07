@@ -60,6 +60,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      packages: read
 
     steps:
       - uses: actions/checkout@v4
@@ -71,9 +72,26 @@ jobs:
           java-version: ${{ inputs.java-version }}
           distribution: 'temurin'
           check-latest: true
-          server-id: central
-          server-username: MAVEN_USERNAME
-          server-password: MAVEN_PASSWORD
+
+      - name: Configure Maven settings
+        run: |
+          mkdir -p ~/.m2
+          cat > ~/.m2/settings.xml << 'EOF'
+          <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0">
+            <servers>
+              <server>
+                <id>central</id>
+                <username>${env.MAVEN_USERNAME}</username>
+                <password>${env.MAVEN_PASSWORD}</password>
+              </server>
+              <server>
+                <id>github</id>
+                <username>${env.GITHUB_ACTOR}</username>
+                <password>${env.GITHUB_TOKEN}</password>
+              </server>
+            </servers>
+          </settings>
+          EOF
 
       - uses: crazy-max/ghaction-import-gpg@v6
         with:
@@ -83,9 +101,60 @@ jobs:
       - name: Set release version
         run: mvn versions:set -DnewVersion=${{ needs.release.outputs.version }} -DgenerateBackupPoms=false
 
+      - name: Build with SNAPSHOT dependencies
+        run: mvn package -B --no-transfer-progress -DskipTests
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+
+      - name: Promote spool-framework SNAPSHOTs to release in local cache
+        run: |
+          M2="$HOME/.m2/repository/io/github/spool-framework"
+          [ -d "$M2" ] || exit 0
+          for ARTIFACT_DIR in "$M2"/*/; do
+            ARTIFACT=$(basename "$ARTIFACT_DIR")
+            for SNAP_DIR in "$ARTIFACT_DIR"*-SNAPSHOT/; do
+              [ -d "$SNAP_DIR" ] || continue
+              SNAP_VER=$(basename "$SNAP_DIR")
+              REL_VER="${SNAP_VER%-SNAPSHOT}"
+              REL_DIR="$ARTIFACT_DIR$REL_VER"
+              mkdir -p "$REL_DIR"
+              > "$REL_DIR/_remote.repositories"
+              for f in "$SNAP_DIR"*; do
+                [ -f "$f" ] || continue
+                FNAME=$(basename "$f")
+                [[ "$FNAME" == _* ]] && continue
+                [[ "$FNAME" == maven-metadata* ]] && continue
+                DEST=$(echo "$FNAME" | sed -E \
+                  "s/${ARTIFACT}-${REL_VER}-[0-9]{8}\.[0-9]{6}-[0-9]+/${ARTIFACT}-${REL_VER}/g; \
+                   s/${ARTIFACT}-${SNAP_VER}/${ARTIFACT}-${REL_VER}/g")
+                cp "$f" "$REL_DIR/$DEST"
+              done
+              echo "Promoted ${ARTIFACT}:${SNAP_VER} -> ${REL_VER}"
+            done
+          done
+
+      - name: Strip SNAPSHOT from spool-framework dependencies
+        run: |
+          python3 - << 'EOF'
+          import re
+          with open('pom.xml', 'r') as f:
+              content = f.read()
+          content = re.sub(
+              r'(<groupId>io\.github\.spool-framework</groupId>.*?<version>)([^<]+)-SNAPSHOT(</version>)',
+              r'\1\2\3',
+              content,
+              flags=re.DOTALL
+          )
+          with open('pom.xml', 'w') as f:
+              f.write(content)
+          EOF
+
       - name: Publish to Maven Central
         run: mvn --batch-mode deploy -P ${{ inputs.maven-profile }} -DskipTests
         env:
           MAVEN_USERNAME: ${{ secrets.MAVEN_CENTRAL_TOKEN_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.MAVEN_CENTRAL_TOKEN_PASSWORD }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
