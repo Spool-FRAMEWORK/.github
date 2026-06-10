@@ -6,7 +6,7 @@
 
 **Spool** is a **modular, event-driven data pipeline framework for Java**. It handles the full lifecycle from raw source extraction to a queryable data mart — with built-in observability, pluggable adapters, and no vendor lock-in.
 
-> **Spool FRAMEWORK Labs** is the examples & use cases organization for the Spool Framework — a collection of real-world, production-style pipelines built with Spool, covering data sources like public APIs, government datasets, healthcare records, and financial filings.
+> **[Spool-FRAMEWORK-Labs](https://github.com/Spool-FRAMEWORK-Labs)** is the examples & use cases organization for the Spool Framework — a collection of real-world, production-style pipelines built with Spool, covering data sources like public APIs, government datasets, healthcare records, and financial filings.
 
 ---
 
